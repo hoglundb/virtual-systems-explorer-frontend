@@ -2,71 +2,128 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
 
 function App() {
-  // This stores the list of clicks we see on the right side of the screen
+  // --- CONFIGURATION ---
+  const buildName = "Builds";
+  const buildPath = `/unity/${buildName}`;
+
+  // --- STATE ---
   const [logs, setLogs] = useState(["System Initialized...", "Awaiting Unity connection..."]);
 
-  // 1. TELL REACT WHERE THE UNITY FILES ARE
-  // Note: These files MUST be inside your 'public/unity/' folder
-  const { unityProvider, isLoaded, loadingProgression, addEventListener, removeEventListener } = useUnityContext({
-    loaderUrl: "/unity/Build.loader.js",
-    dataUrl: "/unity/Build.data",
-    frameworkUrl: "/unity/Build.framework.js",
-    codeUrl: "/unity/Build.wasm",
+  // --- UNITY CONTEXT ---
+  const {
+    unityProvider,
+    isLoaded,
+    loadingProgression,
+    addEventListener,
+    removeEventListener
+  } = useUnityContext({
+    loaderUrl: `${buildPath}.loader.js`,
+    dataUrl: `${buildPath}.data`,
+    frameworkUrl: `${buildPath}.framework.js`,
+    codeUrl: `${buildPath}.wasm`,
   });
 
-  // 2. THE "RECEIVER" FUNCTION
-  // This runs whenever Unity sends a message called "OnPartClicked"
+  // --- HANDLERS ---
   const handlePartClick = useCallback((partName) => {
     const time = new Date().toLocaleTimeString();
     setLogs((prev) => [`[${time}] User clicked: ${partName}`, ...prev.slice(0, 15)]);
-
-    // Optional: Send this same data to your Node.js backend
-    /*
-    fetch('/api/telemetry', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ part: partName, time: time })
-    });
-    */
   }, []);
 
-  // 3. THE "LISTENER"
-  // This tells the browser to keep an ear out for Unity's voice
+  // --- LISTENERS ---
   useEffect(() => {
     addEventListener("OnPartClicked", handlePartClick);
     return () => removeEventListener("OnPartClicked", handlePartClick);
   }, [addEventListener, removeEventListener, handlePartClick]);
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#1a1a1a", color: "white", fontFamily: "sans-serif" }}>
+    <div style={{
+      display: "flex",
+      width: "100vw",
+      height: "100vh",
+      background: "#1a1a1a",
+      color: "white",
+      fontFamily: "sans-serif",
+      margin: 0,
+      padding: 0,
+      overflow: "hidden"
+    }}>
 
-      {/* LEFT SIDE: THE 3D MOTORCYCLE VIEW */}
-      <div style={{ flex: 3, position: "relative", borderRight: "2px solid #333", background: "#000" }}>
+      {/* LEFT SIDE: 3D VIEW (Flexible Area) */}
+      <div style={{
+        flex: 1,              // Take up all remaining space
+        display: "flex",      // Crucial: Makes children (Unity) fill the space
+        position: "relative",
+        borderRight: "2px solid #333",
+        background: "#000",
+        minWidth: "0"         // Fixes a known flexbox bug with large children
+      }}>
+
+        {/* Loading Overlay */}
         {!isLoaded && (
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
-            <p>Loading VSE Prototype...</p>
-            <div style={{ width: "200px", height: "10px", background: "#333", borderRadius: "5px" }}>
-              <div style={{ width: `${loadingProgression * 100}%`, height: "100%", background: "#4caf50", borderRadius: "5px", transition: "width 0.3s" }} />
+          <div style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            textAlign: "center",
+            zIndex: 10,
+            background: "rgba(0,0,0,0.7)",
+            padding: "20px",
+            borderRadius: "10px"
+          }}>
+            <p style={{ marginBottom: "10px" }}>Loading VSE Prototype... {Math.round(loadingProgression * 100)}%</p>
+            <div style={{ width: "240px", height: "8px", background: "#333", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{
+                width: `${loadingProgression * 100}%`,
+                height: "100%",
+                background: "#4caf50",
+                transition: "width 0.3s ease-out"
+              }} />
             </div>
           </div>
         )}
-        <Unity unityProvider={unityProvider} style={{ width: "100%", height: "100%" }} />
+
+        {/* UNITY COMPONENT */}
+        <Unity
+          unityProvider={unityProvider}
+          style={{
+            width: "100%",
+            height: "100%",
+            visibility: isLoaded ? "visible" : "hidden"
+          }}
+        />
       </div>
 
-      {/* RIGHT SIDE: THE DATA FEED */}
-      <div style={{ flex: 1, padding: "20px", overflowY: "auto", background: "#111" }}>
-        <h2 style={{ color: "#4caf50", borderBottom: "1px solid #333", paddingBottom: "10px", marginTop: 0 }}>
+      {/* RIGHT SIDE: DATA FEED (Fixed Width) */}
+      <div style={{
+        width: "350px",       // Fixed width so Unity can't push it
+        padding: "20px",
+        overflowY: "auto",
+        background: "#111",
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box"
+      }}>
+        <h2 style={{
+          color: "#4caf50",
+          fontSize: "1.2rem",
+          borderBottom: "1px solid #333",
+          paddingBottom: "10px",
+          marginTop: 0
+        }}>
           Telemetry Feed
         </h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {logs.map((log, i) => (
             <div key={i} style={{
-              padding: "8px",
-              background: i === 0 ? "#222" : "transparent",
-              borderLeft: i === 0 ? "4px solid #4caf50" : "none",
-              color: i === 0 ? "#fff" : "#888",
-              fontSize: "14px",
-              fontFamily: "monospace"
+              padding: "10px",
+              background: i === 0 ? "rgba(76, 175, 80, 0.1)" : "transparent",
+              borderLeft: i === 0 ? "4px solid #4caf50" : "4px solid transparent",
+              color: i === 0 ? "#fff" : "#777",
+              fontSize: "12px",
+              fontFamily: "monospace",
+              borderRadius: "4px",
+              wordBreak: "break-all"
             }}>
               {log}
             </div>
