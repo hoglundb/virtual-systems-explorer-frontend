@@ -5,6 +5,8 @@ const CYAN = "rgba(100, 210, 230, 0.8)";
 const CYAN_DIM = "rgba(80, 200, 220, 0.25)";
 const TITLE_COLOR = "rgba(200, 230, 255, 0.95)";
 const MUTED = "rgba(100, 210, 230, 0.5)";
+const MIN_WIDTH = 1280;
+const MIN_HEIGHT = 720;
 
 function SectionHeader({ children }) {
   return (
@@ -35,30 +37,18 @@ function RadialStat({ label, value, max }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(80, 200, 220, 0.1)" strokeWidth={strokeWidth} />
         <circle
           cx={size / 2} cy={size / 2} r={radius}
-          fill="none"
-          stroke="rgba(80, 200, 220, 0.1)"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2} cy={size / 2} r={radius}
-          fill="none"
-          stroke={CYAN}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
+          fill="none" stroke={CYAN} strokeWidth={strokeWidth} strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset}
           style={{ transition: "stroke-dashoffset 0.5s ease-out" }}
         />
         <text
           x={size / 2} y={size / 2}
           textAnchor="middle" dominantBaseline="middle"
           style={{ transform: `rotate(90deg)`, transformOrigin: `${size/2}px ${size/2}px` }}
-          fill={TITLE_COLOR}
-          fontSize="13"
-          fontFamily="monospace"
-          fontWeight="bold"
+          fill={TITLE_COLOR} fontSize="13" fontFamily="monospace" fontWeight="bold"
         >
           {Math.round(pct * 100)}%
         </text>
@@ -70,30 +60,46 @@ function RadialStat({ label, value, max }) {
   );
 }
 
-function App() {
-  // --- CONFIGURATION ---
+function UnsupportedScreen() {
+  return (
+    <div style={{
+      width: "100%", height: "100%",
+      background: "rgb(8, 15, 25)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      color: TITLE_COLOR, textAlign: "center", padding: "40px",
+      boxSizing: "border-box"
+    }}>
+      <div style={{ fontSize: "0.7rem", letterSpacing: "4px", color: MUTED, textTransform: "uppercase", marginBottom: "16px" }}>
+        Display Requirements Not Met
+      </div>
+      <div style={{ fontSize: "1.1rem", fontWeight: "bold", letterSpacing: "2px", marginBottom: "24px" }}>
+        UNSUPPORTED RESOLUTION
+      </div>
+      <div style={{ width: "40px", height: "1px", background: CYAN_DIM, marginBottom: "24px" }} />
+      <p style={{ fontSize: "14px", lineHeight: "1.8", color: "rgba(200, 220, 240, 0.75)", maxWidth: "380px", margin: 0 }}>
+        The Virtual Systems Explorer requires a minimum resolution of{" "}
+        <span style={{ color: CYAN, fontFamily: "monospace" }}>{MIN_WIDTH} × {MIN_HEIGHT}</span>.
+        Please resize your browser window or use a larger display.
+      </p>
+    </div>
+  );
+}
+
+function AppContent() {
   const buildName = "Builds";
   const buildPath = `/unity/${buildName}`;
 
-  // --- STATE ---
   const [partsInspected, setPartsInspected] = useState(2);
   const [procedureSteps, setProcedureSteps] = useState(3);
 
-  // --- UNITY CONTEXT ---
-  const {
-    unityProvider,
-    isLoaded,
-    loadingProgression,
-    addEventListener,
-    removeEventListener
-  } = useUnityContext({
+  const { unityProvider, isLoaded, loadingProgression, addEventListener, removeEventListener } = useUnityContext({
     loaderUrl: `${buildPath}.loader.js`,
     dataUrl: `${buildPath}.data`,
     frameworkUrl: `${buildPath}.framework.js`,
     codeUrl: `${buildPath}.wasm`,
   });
 
-  // --- HANDLERS ---
   const handlePartClick = useCallback(() => {
     setPartsInspected((prev) => prev + 1);
   }, []);
@@ -102,7 +108,6 @@ function App() {
     setProcedureSteps(Number(step));
   }, []);
 
-  // --- LISTENERS ---
   useEffect(() => {
     addEventListener("OnPartClicked", handlePartClick);
     addEventListener("OnProcedureStep", handleProcedureStep);
@@ -116,64 +121,34 @@ function App() {
     <div style={{ display: "flex", width: "100%", height: "100%", color: "white" }}>
 
       {/* LEFT SIDE: Unity */}
-      <div style={{
-        flex: 1,
-        display: "flex",
-        position: "relative",
-        borderRight: `1px solid ${CYAN_DIM}`,
-        background: "rgb(8, 15, 25)",
-        minWidth: "0"
-      }}>
+      <div style={{ flex: 1, display: "flex", position: "relative", borderRight: `1px solid ${CYAN_DIM}`, background: "rgb(8, 15, 25)", minWidth: "0" }}>
         {!isLoaded && (
           <div style={{
-            position: "absolute",
-            top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            textAlign: "center",
-            zIndex: 10,
-            background: "rgba(0,0,0,0.7)",
-            padding: "20px",
-            borderRadius: "8px"
+            position: "absolute", top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)", textAlign: "center",
+            zIndex: 10, background: "rgba(0,0,0,0.7)", padding: "20px", borderRadius: "8px"
           }}>
             <p style={{ marginBottom: "10px", letterSpacing: "2px", fontSize: "12px" }}>
               LOADING VSE... {Math.round(loadingProgression * 100)}%
             </p>
             <div style={{ width: "240px", height: "4px", background: "rgba(80,200,220,0.1)", borderRadius: "2px", overflow: "hidden" }}>
-              <div style={{
-                width: `${loadingProgression * 100}%`,
-                height: "100%",
-                background: CYAN,
-                transition: "width 0.3s ease-out"
-              }} />
+              <div style={{ width: `${loadingProgression * 100}%`, height: "100%", background: CYAN, transition: "width 0.3s ease-out" }} />
             </div>
           </div>
         )}
-        <Unity
-          unityProvider={unityProvider}
-          style={{ width: "100%", height: "100%", visibility: isLoaded ? "visible" : "hidden" }}
-        />
+        <Unity unityProvider={unityProvider} style={{ width: "100%", height: "100%", visibility: isLoaded ? "visible" : "hidden" }} />
       </div>
 
       {/* RIGHT SIDE: Sidebar */}
       <div style={{
-        width: "300px",
-        padding: "20px",
-        overflowY: "auto",
-        background: "rgb(8, 15, 25)",
-        borderTop: `1px solid ${CYAN_DIM}`,
-        display: "flex",
-        flexDirection: "column",
-        boxSizing: "border-box"
+        width: "300px", padding: "20px", overflowY: "auto",
+        background: "rgb(8, 15, 25)", borderTop: `1px solid ${CYAN_DIM}`,
+        display: "flex", flexDirection: "column", boxSizing: "border-box"
       }}>
-
         {/* OPERATOR IDENTITY */}
         <div style={{ borderBottom: `1px solid ${CYAN_DIM}`, paddingBottom: "16px" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "2px", color: MUTED, textTransform: "uppercase" }}>
-            Operator
-          </div>
-          <div style={{ fontSize: "13px", fontWeight: "bold", letterSpacing: "1px", color: TITLE_COLOR, marginTop: "4px" }}>
-            John Doe
-          </div>
+          <div style={{ fontSize: "10px", letterSpacing: "2px", color: MUTED, textTransform: "uppercase" }}>Operator</div>
+          <div style={{ fontSize: "13px", fontWeight: "bold", letterSpacing: "1px", color: TITLE_COLOR, marginTop: "4px" }}>John Doe</div>
         </div>
 
         {/* SYSTEM DESCRIPTION */}
@@ -193,11 +168,24 @@ function App() {
             <RadialStat label="Procedure" value={procedureSteps} max={8} />
           </div>
         </div>
-
       </div>
 
     </div>
   );
+}
+
+function App() {
+  const [supported, setSupported] = useState(
+    () => window.innerWidth >= MIN_WIDTH && window.innerHeight >= MIN_HEIGHT
+  );
+
+  useEffect(() => {
+    const check = () => setSupported(window.innerWidth >= MIN_WIDTH && window.innerHeight >= MIN_HEIGHT);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  return supported ? <AppContent /> : <UnsupportedScreen />;
 }
 
 export default App;
