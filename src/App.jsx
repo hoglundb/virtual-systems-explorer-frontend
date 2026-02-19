@@ -1,5 +1,74 @@
-import React, { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
+
+const CYAN = "rgba(100, 210, 230, 0.8)";
+const CYAN_DIM = "rgba(80, 200, 220, 0.25)";
+const TITLE_COLOR = "rgba(200, 230, 255, 0.95)";
+const MUTED = "rgba(100, 210, 230, 0.5)";
+
+function SectionHeader({ children }) {
+  return (
+    <h2 style={{
+      color: TITLE_COLOR,
+      fontSize: "0.7rem",
+      fontWeight: "bold",
+      letterSpacing: "4px",
+      textTransform: "uppercase",
+      borderBottom: `1px solid ${CYAN_DIM}`,
+      paddingBottom: "8px",
+      marginTop: 0,
+      marginBottom: "12px",
+    }}>
+      {children}
+    </h2>
+  );
+}
+
+function RadialStat({ label, value, max }) {
+  const pct = max === 0 ? 0 : value / max;
+  const size = 80;
+  const strokeWidth = 6;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - pct);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none"
+          stroke="rgba(80, 200, 220, 0.1)"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none"
+          stroke={CYAN}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.5s ease-out" }}
+        />
+        <text
+          x={size / 2} y={size / 2}
+          textAnchor="middle" dominantBaseline="middle"
+          style={{ transform: `rotate(90deg)`, transformOrigin: `${size/2}px ${size/2}px` }}
+          fill={TITLE_COLOR}
+          fontSize="13"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
+          {Math.round(pct * 100)}%
+        </text>
+      </svg>
+      <span style={{ fontSize: "10px", letterSpacing: "2px", color: MUTED, textTransform: "uppercase", textAlign: "center" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
 
 function App() {
   // --- CONFIGURATION ---
@@ -7,7 +76,8 @@ function App() {
   const buildPath = `/unity/${buildName}`;
 
   // --- STATE ---
-  const [logs, setLogs] = useState(["System Initialized...", "Awaiting Unity connection..."]);
+  const [partsInspected, setPartsInspected] = useState(2);
+  const [procedureSteps, setProcedureSteps] = useState(3);
 
   // --- UNITY CONTEXT ---
   const {
@@ -24,111 +94,106 @@ function App() {
   });
 
   // --- HANDLERS ---
-  const handlePartClick = useCallback((partName) => {
-    const time = new Date().toLocaleTimeString();
-    setLogs((prev) => [`[${time}] User clicked: ${partName}`, ...prev.slice(0, 15)]);
+  const handlePartClick = useCallback(() => {
+    setPartsInspected((prev) => prev + 1);
+  }, []);
+
+  const handleProcedureStep = useCallback((step) => {
+    setProcedureSteps(Number(step));
   }, []);
 
   // --- LISTENERS ---
   useEffect(() => {
     addEventListener("OnPartClicked", handlePartClick);
-    return () => removeEventListener("OnPartClicked", handlePartClick);
-  }, [addEventListener, removeEventListener, handlePartClick]);
+    addEventListener("OnProcedureStep", handleProcedureStep);
+    return () => {
+      removeEventListener("OnPartClicked", handlePartClick);
+      removeEventListener("OnProcedureStep", handleProcedureStep);
+    };
+  }, [addEventListener, removeEventListener, handlePartClick, handleProcedureStep]);
 
   return (
-    <div style={{
-      display: "flex",
-      width: "100vw",
-      height: "100vh",
-      background: "#1a1a1a",
-      color: "white",
-      fontFamily: "sans-serif",
-      margin: 0,
-      padding: 0,
-      overflow: "hidden"
-    }}>
+    <div style={{ display: "flex", width: "100%", height: "100%", color: "white" }}>
 
-      {/* LEFT SIDE: 3D VIEW (Flexible Area) */}
+      {/* LEFT SIDE: Unity */}
       <div style={{
-        flex: 1,              // Take up all remaining space
-        display: "flex",      // Crucial: Makes children (Unity) fill the space
+        flex: 1,
+        display: "flex",
         position: "relative",
-        borderRight: "2px solid #333",
-        background: "#000",
-        minWidth: "0"         // Fixes a known flexbox bug with large children
+        borderRight: `1px solid ${CYAN_DIM}`,
+        background: "rgb(8, 15, 25)",
+        minWidth: "0"
       }}>
-
-        {/* Loading Overlay */}
         {!isLoaded && (
           <div style={{
             position: "absolute",
-            top: "50%",
-            left: "50%",
+            top: "50%", left: "50%",
             transform: "translate(-50%, -50%)",
             textAlign: "center",
             zIndex: 10,
             background: "rgba(0,0,0,0.7)",
             padding: "20px",
-            borderRadius: "10px"
+            borderRadius: "8px"
           }}>
-            <p style={{ marginBottom: "10px" }}>Loading VSE Prototype... {Math.round(loadingProgression * 100)}%</p>
-            <div style={{ width: "240px", height: "8px", background: "#333", borderRadius: "4px", overflow: "hidden" }}>
+            <p style={{ marginBottom: "10px", letterSpacing: "2px", fontSize: "12px" }}>
+              LOADING VSE... {Math.round(loadingProgression * 100)}%
+            </p>
+            <div style={{ width: "240px", height: "4px", background: "rgba(80,200,220,0.1)", borderRadius: "2px", overflow: "hidden" }}>
               <div style={{
                 width: `${loadingProgression * 100}%`,
                 height: "100%",
-                background: "#4caf50",
+                background: CYAN,
                 transition: "width 0.3s ease-out"
               }} />
             </div>
           </div>
         )}
-
-        {/* UNITY COMPONENT */}
         <Unity
           unityProvider={unityProvider}
-          style={{
-            width: "100%",
-            height: "100%",
-            visibility: isLoaded ? "visible" : "hidden"
-          }}
+          style={{ width: "100%", height: "100%", visibility: isLoaded ? "visible" : "hidden" }}
         />
       </div>
 
-      {/* RIGHT SIDE: DATA FEED (Fixed Width) */}
+      {/* RIGHT SIDE: Sidebar */}
       <div style={{
-        width: "350px",       // Fixed width so Unity can't push it
+        width: "300px",
         padding: "20px",
         overflowY: "auto",
-        background: "#111",
+        background: "rgb(8, 15, 25)",
+        borderTop: `1px solid ${CYAN_DIM}`,
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box"
       }}>
-        <h2 style={{
-          color: "#4caf50",
-          fontSize: "1.2rem",
-          borderBottom: "1px solid #333",
-          paddingBottom: "10px",
-          marginTop: 0
-        }}>
-          Telemetry Feed
-        </h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {logs.map((log, i) => (
-            <div key={i} style={{
-              padding: "10px",
-              background: i === 0 ? "rgba(76, 175, 80, 0.1)" : "transparent",
-              borderLeft: i === 0 ? "4px solid #4caf50" : "4px solid transparent",
-              color: i === 0 ? "#fff" : "#777",
-              fontSize: "12px",
-              fontFamily: "monospace",
-              borderRadius: "4px",
-              wordBreak: "break-all"
-            }}>
-              {log}
-            </div>
-          ))}
+
+        {/* OPERATOR IDENTITY */}
+        <div style={{ borderBottom: `1px solid ${CYAN_DIM}`, paddingBottom: "16px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "2px", color: MUTED, textTransform: "uppercase" }}>
+            Operator
+          </div>
+          <div style={{ fontSize: "13px", fontWeight: "bold", letterSpacing: "1px", color: TITLE_COLOR, marginTop: "4px" }}>
+            John Doe
+          </div>
         </div>
+
+        {/* SYSTEM DESCRIPTION */}
+        <div style={{ marginTop: "24px" }}>
+          <p style={{ fontSize: "14px", lineHeight: "1.7", color: "rgba(200, 220, 240, 0.75)", margin: 0 }}>
+            The Virtual Systems Explorer is an interactive training platform for maintenance technicians.
+            Use the 3D viewer to inspect equipment components, follow guided maintenance procedures,
+            and track certification progress.
+          </p>
+        </div>
+
+        {/* OPERATOR STATS */}
+        <div style={{ marginTop: "auto" }}>
+          <SectionHeader>Operator Stats</SectionHeader>
+          <div style={{ display: "flex", justifyContent: "space-around", paddingTop: "8px" }}>
+            <RadialStat label="Parts Inspected" value={partsInspected} max={12} />
+            <RadialStat label="Procedure" value={procedureSteps} max={8} />
+          </div>
+        </div>
+
       </div>
 
     </div>
