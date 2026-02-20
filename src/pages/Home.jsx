@@ -7,10 +7,10 @@ const TITLE_COLOR = "rgba(200, 230, 255, 0.95)";
 const MUTED = "rgba(100, 210, 230, 0.5)";
 
 const MENU_ITEMS = [
-  { label: "Interactive 3D Viewer", route: "/parts", active: true },
+  { label: "Parts Catalog", route: "/parts", active: true },
+  { label: "3D Vehicle Viewer", route: "/viewer", active: false },
   { label: "Maintenance Procedures", route: "/procedures", active: false },
   { label: "Data & Analytics", route: "/analytics", active: false },
-  { label: "Tutorials & Training", route: "/training", active: false },
   { label: "Settings & Profile", route: "/settings", active: false },
 ];
 
