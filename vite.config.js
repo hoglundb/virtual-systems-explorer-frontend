@@ -7,5 +7,11 @@ export default defineConfig({
   build: {
     outDir: '../build',
     emptyOutDir: true
+  },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/assets': 'http://localhost:3000'
+    }
   }
 })
