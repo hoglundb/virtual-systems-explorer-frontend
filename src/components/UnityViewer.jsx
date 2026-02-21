@@ -202,34 +202,8 @@ function UnityViewer() {
   return (
     <>
       {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
-      <div style={{ display: "flex", width: "100%", height: "100%", color: "white", visibility: ready ? "visible" : "hidden" }}>
-        <div style={{ flex: 1, display: "flex", position: "relative", borderRight: `1px solid ${CYAN_DIM}`, background: "rgb(8, 15, 25)", minWidth: "0" }}>
-          <Unity unityProvider={unityProvider} style={{ width: "100%", height: "100%" }} />
-        </div>
-        <div style={{
-          width: "300px", padding: "20px", overflowY: "auto",
-          background: "rgb(8, 15, 25)", borderTop: `1px solid ${CYAN_DIM}`,
-          display: "flex", flexDirection: "column", boxSizing: "border-box"
-        }}>
-          <div style={{ borderBottom: `1px solid ${CYAN_DIM}`, paddingBottom: "16px" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "2px", color: MUTED, textTransform: "uppercase" }}>Operator</div>
-            <div style={{ fontSize: "13px", fontWeight: "bold", letterSpacing: "1px", color: TITLE_COLOR, marginTop: "4px" }}>John Doe</div>
-          </div>
-          <div style={{ marginTop: "24px" }}>
-            <p style={{ fontSize: "14px", lineHeight: "1.7", color: "rgba(200, 220, 240, 0.75)", margin: 0 }}>
-              The Virtual Systems Explorer is an interactive training platform for maintenance technicians.
-              Use the 3D viewer to inspect equipment components, follow guided maintenance procedures,
-              and track certification progress.
-            </p>
-          </div>
-          <div style={{ marginTop: "auto" }}>
-            <SectionHeader>Operator Stats</SectionHeader>
-            <div style={{ display: "flex", justifyContent: "space-around", paddingTop: "8px" }}>
-              <RadialStat label="Parts Inspected" value={partsInspected} max={12} />
-              <RadialStat label="Procedure" value={procedureSteps} max={8} />
-            </div>
-          </div>
-        </div>
+      <div style={{ width: "100%", height: "100%", background: "rgb(8, 15, 25)", visibility: splashDone ? "visible" : "hidden" }}>
+        <Unity unityProvider={unityProvider} style={{ width: "100%", height: "100%" }} />
       </div>
     </>
   );
