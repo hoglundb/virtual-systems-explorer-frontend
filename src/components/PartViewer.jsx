@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, OrbitControls, Center, Environment, Bounds } from "@react-three/drei";
 import * as THREE from "three";
@@ -96,6 +96,35 @@ function makeDitherMaterial(origMaterial) {
     },
     side: origMaterial.side ?? THREE.FrontSide,
   });
+}
+
+class GLBErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: false };
+  }
+  static getDerivedStateFromError() {
+    return { error: true };
+  }
+  componentDidCatch() {
+    this.props.onUnavailable?.();
+  }
+  componentDidUpdate(prevProps) {
+    // Reset when the URL changes so a new part gets a fresh attempt
+    if (prevProps.url !== this.props.url) {
+      this.setState({ error: false });
+    }
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <Center>
+          <PlaceholderModel />
+        </Center>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 function GLBModel({ url, onLoaded }) {
@@ -206,6 +235,7 @@ function PartViewer({ selectedPart, onPartUpdated }) {
   const [detail, setDetail] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [modelUnavailable, setModelUnavailable] = useState(false);
 
   useEffect(() => {
     if (!selectedPart) { setDetail(null); return; }
@@ -217,7 +247,10 @@ function PartViewer({ selectedPart, onPartUpdated }) {
 
   // Must be before any early returns — Rules of Hooks
   useEffect(() => {
-    if (selectedPart) setIsLoading(true);
+    if (selectedPart) {
+      setIsLoading(true);
+      setModelUnavailable(false);
+    }
   }, [selectedPart?.id]);
 
   const handleSaved = (updated) => {
@@ -279,9 +312,11 @@ function PartViewer({ selectedPart, onPartUpdated }) {
           <ambientLight intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={1} />
           <Suspense fallback={null}>
-            <Bounds fit clip observe margin={1.2} interpolateFunc={() => 1}>
-              <GLBModel url={glbUrl} onLoaded={() => setIsLoading(false)} />
-            </Bounds>
+            <GLBErrorBoundary url={glbUrl} onUnavailable={() => { setIsLoading(false); setModelUnavailable(true); }}>
+              <Bounds fit clip observe margin={1.2} interpolateFunc={() => 1}>
+                <GLBModel url={glbUrl} onLoaded={() => setIsLoading(false)} />
+              </Bounds>
+            </GLBErrorBoundary>
             <Environment preset="city" />
           </Suspense>
           <OrbitControls makeDefault enablePan={true} enableZoom={true} enableRotate={true} minPolarAngle={0} maxPolarAngle={Math.PI} />
@@ -296,7 +331,7 @@ function PartViewer({ selectedPart, onPartUpdated }) {
         </div>
 
         {/* Loading overlay */}
-        {isLoading && (
+        {isLoading && !modelUnavailable && (
           <div style={{
             position: "absolute", inset: 0,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -311,6 +346,23 @@ function PartViewer({ selectedPart, onPartUpdated }) {
                 width: "40%", background: CYAN,
                 animation: "vse-scan 1.2s ease-in-out infinite",
               }} />
+            </div>
+          </div>
+        )}
+
+        {/* Model unavailable overlay */}
+        {modelUnavailable && (
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            gap: "10px", pointerEvents: "none", zIndex: 2,
+          }}>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "4px", color: MUTED, textTransform: "uppercase" }}>
+              Model Unavailable
+            </div>
+            <div style={{ width: "30px", height: "1px", background: CYAN_DIM }} />
+            <div style={{ fontSize: "0.7rem", color: "rgba(200, 220, 240, 0.35)", letterSpacing: "2px", textTransform: "uppercase" }}>
+              GLB file not found on server
             </div>
           </div>
         )}

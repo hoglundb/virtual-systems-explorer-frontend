@@ -54,6 +54,11 @@ function EditPartModal({ part, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const handleSave = async () => {
     if (!name.trim()) { setError("Name is required"); return; }
@@ -101,14 +106,15 @@ function EditPartModal({ part, onClose, onSaved }) {
           <div style={{ fontSize: "0.6rem", letterSpacing: "4px", color: MUTED, textTransform: "uppercase", marginBottom: "8px" }}>
             Edit Part
           </div>
-          <div style={{ fontSize: "1rem", fontWeight: "bold", letterSpacing: "2px", color: TITLE_COLOR }}>
-            {part.id}
+          <div style={{ fontSize: "1rem", fontWeight: "bold", letterSpacing: "2px", color: TITLE_COLOR,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {part.name}
           </div>
           <div style={{ width: "100%", height: "1px", background: CYAN_DIM, marginTop: "16px" }} />
         </div>
 
         {/* Fields */}
-        <Field label="Part ID (read only)" value={part.id} onChange={() => {}} readOnly />
+        <Field label="Part ID" value={part.id} onChange={() => {}} readOnly />
         <Field label="Display Name" value={name} onChange={setName} />
         <Field label="Description" value={description} onChange={setDescription} multiline />
 

@@ -9,12 +9,11 @@ const MUTED = "rgba(100, 210, 230, 0.5)";
 const BG = "rgb(8, 15, 25)";
 
 const CONTROLS = [
-  { input: "Left Click + Drag", action: "Rotate" },
-  { input: "Right Click + Drag", action: "Pan" },
-  { input: "Middle Scroll", action: "Zoom" },
-  { input: "Left Click", action: "Select Part" },
-  { input: "Double Click", action: "Focus Part" },
-  { input: "Esc", action: "Deselect" },
+  { input: "Right Click + Drag", action: "Rotate" },
+  { input: "Middle Click + Drag", action: "Pan" },
+  { input: "Left Click + Drag", action: "Select / Move Part" },
+  { input: "Scroll Wheel", action: "Zoom" },
+  { input: "R", action: "Reset View" },
 ];
 
 function ControlRow({ input, action }) {
@@ -24,16 +23,16 @@ function ControlRow({ input, action }) {
       padding: "8px 0", borderBottom: `1px solid rgba(80, 200, 220, 0.1)`,
     }}>
       <span style={{
-        fontSize: "0.65rem", letterSpacing: "1px",
-        color: TITLE_COLOR, fontFamily: "monospace",
-      }}>
-        {input}
-      </span>
-      <span style={{
         fontSize: "0.6rem", letterSpacing: "2px", textTransform: "uppercase",
         color: MUTED,
       }}>
         {action}
+      </span>
+      <span style={{
+        fontSize: "0.65rem", letterSpacing: "1px",
+        color: TITLE_COLOR, fontFamily: "monospace",
+      }}>
+        {input}
       </span>
     </div>
   );

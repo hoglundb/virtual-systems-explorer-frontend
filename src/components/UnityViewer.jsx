@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
 
 const CYAN = "rgba(100, 210, 230, 0.8)";
@@ -15,7 +15,7 @@ const BOOT_LINES = [
   "Mounting 3D subsystems...",
   "Calibrating interaction layer...",
   "Establishing operator session...",
-  "VSE ready.",
+  "Awaiting engine...",
 ];
 
 function SectionHeader({ children }) {
@@ -70,36 +70,48 @@ function RadialStat({ label, value, max }) {
   );
 }
 
-export function SplashScreen({ onDone }) {
+export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false }) {
   const [visibleLines, setVisibleLines] = useState(0);
-  const [progress, setProgress] = useState(0);
   const [fading, setFading] = useState(false);
+  const progress = Math.round(loadingProgression * 100);
 
+  // Advance boot lines on a fixed timer regardless of load progress
   useEffect(() => {
     const lineInterval = SPLASH_DURATION / BOOT_LINES.length;
-
     const lineTimer = setInterval(() => {
       setVisibleLines((prev) => {
         if (prev >= BOOT_LINES.length) { clearInterval(lineTimer); return prev; }
         return prev + 1;
       });
     }, lineInterval);
+    return () => clearInterval(lineTimer);
+  }, []);
 
-    const progressTimer = setInterval(() => {
-      setProgress((prev) => Math.min(prev + 1, 100));
-    }, SPLASH_DURATION / 100);
+  // Dismiss only when both the timer has elapsed AND Unity is loaded
+  const timerDone = useRef(false);
+  useEffect(() => {
+    const doneTimer = setTimeout(() => { timerDone.current = true; }, SPLASH_DURATION);
+    return () => clearTimeout(doneTimer);
+  }, []);
 
-    const doneTimer = setTimeout(() => {
+  useEffect(() => {
+    if (isLoaded && timerDone.current && !fading) {
       setFading(true);
       setTimeout(onDone, 600);
-    }, SPLASH_DURATION);
+    }
+  }, [isLoaded, fading, onDone]);
 
-    return () => {
-      clearInterval(lineTimer);
-      clearInterval(progressTimer);
-      clearTimeout(doneTimer);
-    };
-  }, [onDone]);
+  // Poll after timer in case isLoaded arrived before the effect re-ran
+  useEffect(() => {
+    const poll = setInterval(() => {
+      if (isLoaded && timerDone.current && !fading) {
+        setFading(true);
+        setTimeout(onDone, 600);
+        clearInterval(poll);
+      }
+    }, 100);
+    return () => clearInterval(poll);
+  }, [isLoaded, fading, onDone]);
 
   return (
     <div style={{
@@ -173,7 +185,7 @@ function UnityViewer() {
   const [procedureSteps, setProcedureSteps] = useState(3);
   const [splashDone, setSplashDone] = useState(false);
 
-  const { unityProvider, isLoaded, addEventListener, removeEventListener } = useUnityContext({
+  const { unityProvider, isLoaded, loadingProgression, addEventListener, removeEventListener } = useUnityContext({
     loaderUrl: `${buildPath}.loader.js`,
     dataUrl: `${buildPath}.data`,
     frameworkUrl: `${buildPath}.framework.js`,
@@ -201,7 +213,7 @@ function UnityViewer() {
 
   return (
     <>
-      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
+      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} loadingProgression={loadingProgression} isLoaded={isLoaded} />}
       <div style={{ width: "100%", height: "100%", background: "rgb(8, 15, 25)", visibility: splashDone ? "visible" : "hidden" }}>
         <Unity unityProvider={unityProvider} style={{ width: "100%", height: "100%" }} />
       </div>
