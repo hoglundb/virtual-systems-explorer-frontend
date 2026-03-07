@@ -17,7 +17,10 @@ function PartsList({ selectedPart, onSelectPart }) {
 
   useEffect(() => {
     fetch("/api/parts")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         setParts(data);
         setLoading(false);
