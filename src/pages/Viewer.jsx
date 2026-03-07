@@ -11,9 +11,11 @@ const BG = "rgb(8, 15, 25)";
 const CONTROLS = [
   { input: "Right Click + Drag", action: "Rotate" },
   { input: "Middle Click + Drag", action: "Pan" },
-  { input: "Left Click + Drag", action: "Select / Move Part" },
-  { input: "Scroll Wheel", action: "Zoom" },
-  { input: "R", action: "Reset View" },
+  { input: "Left Click",          action: "Select Part" },
+  { input: "Left Click + Drag",   action: "Move Part" },
+  { input: "Scroll Wheel",        action: "Zoom" },
+  { input: "F",                   action: "Focus Selected" },
+  { input: "R",                   action: "Reset View" },
 ];
 
 function ControlRow({ input, action }) {
