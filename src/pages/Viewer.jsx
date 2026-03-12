@@ -14,6 +14,7 @@ const CONTROLS = [
   { input: "Left Click",          action: "Select Part" },
   { input: "Left Click + Drag",   action: "Move Part" },
   { input: "Scroll Wheel",        action: "Zoom" },
+  { input: "E",                   action: "Explode View" },
   { input: "F",                   action: "Focus Selected" },
   { input: "R",                   action: "Reset View" },
 ];
