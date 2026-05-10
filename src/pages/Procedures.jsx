@@ -3,51 +3,17 @@ import UnityViewer from "../components/UnityViewer";
 
 const CYAN = "rgba(100, 210, 230, 0.8)";
 const CYAN_DIM = "rgba(80, 200, 220, 0.25)";
-const CYAN_BG = "rgba(80, 200, 220, 0.07)";
 const TITLE_COLOR = "rgba(200, 230, 255, 0.95)";
 const MUTED = "rgba(100, 210, 230, 0.5)";
 const BG = "rgb(8, 15, 25)";
 
-const CONTROLS = [
-  { input: "Right Click + Drag", action: "Rotate" },
-  { input: "Middle Click + Drag", action: "Pan" },
-  { input: "Left Click",          action: "Select Part" },
-  { input: "Left Click + Drag",   action: "Move Part" },
-  { input: "Scroll Wheel",        action: "Zoom" },
-  { input: "E",                   action: "Explode View" },
-  { input: "F",                   action: "Focus Camera" },
-  { input: "R",                   action: "Reset View" },
-];
-
-function ControlRow({ input, action }) {
-  return (
-    <div style={{
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-      padding: "8px 0", borderBottom: `1px solid rgba(80, 200, 220, 0.1)`,
-    }}>
-      <span style={{
-        fontSize: "0.6rem", letterSpacing: "2px", textTransform: "uppercase",
-        color: MUTED,
-      }}>
-        {action}
-      </span>
-      <span style={{
-        fontSize: "0.65rem", letterSpacing: "1px",
-        color: TITLE_COLOR, fontFamily: "monospace",
-      }}>
-        {input}
-      </span>
-    </div>
-  );
-}
-
-function Viewer() {
+function Procedures() {
   const navigate = useNavigate();
 
   return (
     <div style={{ display: "flex", width: "100%", height: "100%" }}>
 
-      {/* Left panel — back button + controls */}
+      {/* Left panel */}
       <div style={{
         width: "280px", flexShrink: 0,
         borderRight: `1px solid ${CYAN_DIM}`,
@@ -73,21 +39,21 @@ function Viewer() {
             ← Home
           </button>
           <div style={{ fontSize: "0.65rem", letterSpacing: "4px", color: MUTED, textTransform: "uppercase" }}>
-            3D Vehicle Viewer
+            Maintenance Procedures
           </div>
         </div>
 
-        {/* Controls reference */}
+        {/* Placeholder for procedure step list */}
         <div style={{ padding: "16px", flex: 1 }}>
           <div style={{
             fontSize: "0.55rem", letterSpacing: "3px", color: MUTED,
             textTransform: "uppercase", marginBottom: "12px",
           }}>
-            Viewport Controls
+            Procedure Steps
           </div>
-          {CONTROLS.map((c) => (
-            <ControlRow key={c.input} input={c.input} action={c.action} />
-          ))}
+          <div style={{ fontSize: "0.7rem", color: "rgba(200, 220, 240, 0.4)", lineHeight: "1.6" }}>
+            Steps will appear here as the procedure progresses.
+          </div>
         </div>
 
         {/* Footer status */}
@@ -100,11 +66,11 @@ function Viewer() {
 
       {/* Unity canvas area */}
       <div style={{ flex: 1, minWidth: 0, height: "100%", overflow: "hidden" }}>
-        <UnityViewer sceneName="S_FlatTrackExploration" />
+        <UnityViewer sceneName="HSTT_Procedure_Scene" />
       </div>
 
     </div>
   );
 }
 
-export default Viewer;
+export default Procedures;

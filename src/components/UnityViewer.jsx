@@ -177,7 +177,7 @@ export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false 
   );
 }
 
-function UnityViewer() {
+function UnityViewer({ sceneName }) {
   const buildName = "Builds";
   const buildPath = `/unity/${buildName}`;
 
@@ -185,7 +185,7 @@ function UnityViewer() {
   const [procedureSteps, setProcedureSteps] = useState(3);
   const [splashDone, setSplashDone] = useState(false);
 
-  const { unityProvider, isLoaded, loadingProgression, addEventListener, removeEventListener } = useUnityContext({
+  const { unityProvider, isLoaded, loadingProgression, addEventListener, removeEventListener, sendMessage } = useUnityContext({
     loaderUrl: `${buildPath}.loader.js`,
     dataUrl: `${buildPath}.data`,
     frameworkUrl: `${buildPath}.framework.js`,
@@ -193,6 +193,12 @@ function UnityViewer() {
   });
 
   const ready = isLoaded && splashDone;
+
+  useEffect(() => {
+    if (isLoaded && sceneName) {
+      sendMessage("SceneLoader", "LoadScene", sceneName);
+    }
+  }, [isLoaded, sceneName, sendMessage]);
 
   const handlePartClick = useCallback(() => {
     setPartsInspected((prev) => prev + 1);
