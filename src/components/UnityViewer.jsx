@@ -1,12 +1,9 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Unity, useUnityContext } from "react-unity-webgl";
+import { useState, useEffect, useRef } from "react";
 
 const CYAN = "rgba(100, 210, 230, 0.8)";
 const CYAN_DIM = "rgba(80, 200, 220, 0.25)";
 const TITLE_COLOR = "rgba(200, 230, 255, 0.95)";
 const MUTED = "rgba(100, 210, 230, 0.5)";
-const MIN_WIDTH = 1280;
-const MIN_HEIGHT = 720;
 const SPLASH_DURATION = 3500;
 
 const BOOT_LINES = [
@@ -18,64 +15,23 @@ const BOOT_LINES = [
   "Awaiting engine...",
 ];
 
-function SectionHeader({ children }) {
-  return (
-    <h2 style={{
-      color: TITLE_COLOR,
-      fontSize: "0.7rem",
-      fontWeight: "bold",
-      letterSpacing: "4px",
-      textTransform: "uppercase",
-      borderBottom: `1px solid ${CYAN_DIM}`,
-      paddingBottom: "8px",
-      marginTop: 0,
-      marginBottom: "12px",
-    }}>
-      {children}
-    </h2>
-  );
-}
-
-function RadialStat({ label, value, max }) {
-  const pct = max === 0 ? 0 : value / max;
-  const size = 80;
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - pct);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(80, 200, 220, 0.1)" strokeWidth={strokeWidth} />
-        <circle
-          cx={size / 2} cy={size / 2} r={radius}
-          fill="none" stroke={CYAN} strokeWidth={strokeWidth} strokeLinecap="round"
-          strokeDasharray={circumference} strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.5s ease-out" }}
-        />
-        <text
-          x={size / 2} y={size / 2}
-          textAnchor="middle" dominantBaseline="middle"
-          style={{ transform: `rotate(90deg)`, transformOrigin: `${size/2}px ${size/2}px` }}
-          fill={TITLE_COLOR} fontSize="13" fontFamily="monospace" fontWeight="bold"
-        >
-          {Math.round(pct * 100)}%
-        </text>
-      </svg>
-      <span style={{ fontSize: "10px", letterSpacing: "2px", color: MUTED, textTransform: "uppercase", textAlign: "center" }}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false }) {
+export function SplashScreen({ onDone, isLoaded = false }) {
   const [visibleLines, setVisibleLines] = useState(0);
   const [fading, setFading] = useState(false);
-  const progress = Math.round(loadingProgression * 100);
+  const [progress, setProgress] = useState(0);
 
-  // Advance boot lines on a fixed timer regardless of load progress
+  useEffect(() => {
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(Math.round((elapsed / SPLASH_DURATION) * 100), 99);
+      setProgress(pct);
+      if (pct < 99) requestAnimationFrame(tick);
+    };
+    const raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   useEffect(() => {
     const lineInterval = SPLASH_DURATION / BOOT_LINES.length;
     const lineTimer = setInterval(() => {
@@ -87,7 +43,6 @@ export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false 
     return () => clearInterval(lineTimer);
   }, []);
 
-  // Dismiss only when both the timer has elapsed AND Unity is loaded
   const timerDone = useRef(false);
   useEffect(() => {
     const doneTimer = setTimeout(() => { timerDone.current = true; }, SPLASH_DURATION);
@@ -101,7 +56,6 @@ export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false 
     }
   }, [isLoaded, fading, onDone]);
 
-  // Poll after timer in case isLoaded arrived before the effect re-ran
   useEffect(() => {
     const poll = setInterval(() => {
       if (isLoaded && timerDone.current && !fading) {
@@ -123,15 +77,6 @@ export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false 
       opacity: fading ? 0 : 1,
       transition: "opacity 0.6s ease-out",
     }}>
-      {[
-        { top: "20px", left: "20px", borderTop: `1px solid ${CYAN}`, borderLeft: `1px solid ${CYAN}` },
-        { top: "20px", right: "20px", borderTop: `1px solid ${CYAN}`, borderRight: `1px solid ${CYAN}` },
-        { bottom: "20px", left: "20px", borderBottom: `1px solid ${CYAN}`, borderLeft: `1px solid ${CYAN}` },
-        { bottom: "20px", right: "20px", borderBottom: `1px solid ${CYAN}`, borderRight: `1px solid ${CYAN}` },
-      ].map((style, i) => (
-        <div key={i} style={{ position: "absolute", width: "40px", height: "40px", ...style }} />
-      ))}
-
       <div style={{ textAlign: "center", marginBottom: "60px" }}>
         <div style={{ fontSize: "11px", letterSpacing: "8px", color: MUTED, textTransform: "uppercase", marginBottom: "16px" }}>
           Virtual Systems Explorer
@@ -176,55 +121,3 @@ export function SplashScreen({ onDone, loadingProgression = 0, isLoaded = false 
     </div>
   );
 }
-
-function UnityViewer({ sceneName }) {
-  const buildName = "Builds";
-  const buildPath = `/unity/${buildName}`;
-
-  const [partsInspected, setPartsInspected] = useState(2);
-  const [procedureSteps, setProcedureSteps] = useState(3);
-  const [splashDone, setSplashDone] = useState(false);
-
-  const { unityProvider, isLoaded, loadingProgression, addEventListener, removeEventListener, sendMessage } = useUnityContext({
-    loaderUrl: `${buildPath}.loader.js`,
-    dataUrl: `${buildPath}.data`,
-    frameworkUrl: `${buildPath}.framework.js`,
-    codeUrl: `${buildPath}.wasm`,
-  });
-
-  const ready = isLoaded && splashDone;
-
-  useEffect(() => {
-    if (isLoaded && sceneName) {
-      sendMessage("SceneLoader", "LoadScene", sceneName);
-    }
-  }, [isLoaded, sceneName, sendMessage]);
-
-  const handlePartClick = useCallback(() => {
-    setPartsInspected((prev) => prev + 1);
-  }, []);
-
-  const handleProcedureStep = useCallback((step) => {
-    setProcedureSteps(Number(step));
-  }, []);
-
-  useEffect(() => {
-    addEventListener("OnPartClicked", handlePartClick);
-    addEventListener("OnProcedureStep", handleProcedureStep);
-    return () => {
-      removeEventListener("OnPartClicked", handlePartClick);
-      removeEventListener("OnProcedureStep", handleProcedureStep);
-    };
-  }, [addEventListener, removeEventListener, handlePartClick, handleProcedureStep]);
-
-  return (
-    <>
-      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} loadingProgression={loadingProgression} isLoaded={isLoaded} />}
-      <div style={{ width: "100%", height: "100%", background: "rgb(8, 15, 25)", visibility: splashDone ? "visible" : "hidden" }}>
-        <Unity unityProvider={unityProvider} style={{ width: "100%", height: "100%" }} />
-      </div>
-    </>
-  );
-}
-
-export default UnityViewer;

@@ -1,5 +1,6 @@
+import { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import UnityViewer from "../components/UnityViewer";
+import { useUnity } from "../context/UnityContext";
 
 const CYAN = "rgba(100, 210, 230, 0.8)";
 const CYAN_DIM = "rgba(80, 200, 220, 0.25)";
@@ -9,13 +10,27 @@ const BG = "rgb(8, 15, 25)";
 
 function Procedures() {
   const navigate = useNavigate();
+  const { isLoaded, sendMessage, addEventListener, removeEventListener } = useUnity();
+
+  useEffect(() => {
+    if (isLoaded) {
+      sendMessage("SceneLoader", "LoadScene", "HydrostaticProcedureScene");
+    }
+  }, [isLoaded, sendMessage]);
+
+  const handleProcedureStep = useCallback((step) => {}, []);
+
+  useEffect(() => {
+    addEventListener("OnProcedureStep", handleProcedureStep);
+    return () => removeEventListener("OnProcedureStep", handleProcedureStep);
+  }, [addEventListener, removeEventListener, handleProcedureStep]);
 
   return (
-    <div style={{ display: "flex", width: "100%", height: "100%" }}>
+    <div style={{ display: "flex", width: "100%", height: "100%", position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
 
       {/* Left panel */}
       <div style={{
-        width: "280px", flexShrink: 0,
+        width: "280px", flexShrink: 0, pointerEvents: "auto",
         borderRight: `1px solid ${CYAN_DIM}`,
         background: BG,
         display: "flex", flexDirection: "column",
@@ -62,11 +77,6 @@ function Procedures() {
             Unity WebGL
           </span>
         </div>
-      </div>
-
-      {/* Unity canvas area */}
-      <div style={{ flex: 1, minWidth: 0, height: "100%", overflow: "hidden" }}>
-        <UnityViewer sceneName="HSTT_Procedure_Scene" />
       </div>
 
     </div>

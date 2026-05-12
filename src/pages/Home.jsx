@@ -210,6 +210,7 @@ function DevLog() {
 }
 
 function Home() {
+  const navigate = useNavigate();
   const [booted, setBooted] = useState(sessionBooted);
   const [scrolled, setScrolled] = useState(false);
   const [touchWarning, setTouchWarning] = useState(null);
@@ -223,7 +224,7 @@ function Home() {
     if (isTouchOnly()) {
       setTouchWarning(path);
     } else {
-      window.open(path, "_blank");
+      navigate(path);
     }
   };
 
@@ -248,7 +249,7 @@ function Home() {
       {touchWarning && (
         <TouchWarningModal
           path={touchWarning}
-          onConfirm={() => { window.open(touchWarning, "_blank"); setTouchWarning(null); }}
+          onConfirm={() => { navigate(touchWarning); setTouchWarning(null); }}
           onCancel={() => setTouchWarning(null)}
         />
       )}
