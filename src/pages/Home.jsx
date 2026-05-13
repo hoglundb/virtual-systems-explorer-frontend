@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Home.css";
+import SchematicBackground from "../components/SchematicBackground";
 
 let sessionBooted = false;
 
@@ -253,7 +254,8 @@ function Home() {
           onCancel={() => setTouchWarning(null)}
         />
       )}
-      <div className={`home-main${booted ? " visible" : ""}`}>
+      <SchematicBackground />
+      <div className={`home-main${booted ? " visible" : ""}`} style={{ position: "relative", zIndex: 1 }}>
 
         <nav>
           <a href="#" className="nav-logo">VIX<span>T</span>RION</a>
